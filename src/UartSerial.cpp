@@ -1,178 +1,316 @@
+/* Created and copyrighted by Kevin D. Sidwar. Offered as open source under the MIT License (MIT). */
 
 #include "UartSerial.h"
+
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdlib.h>
-#include "sys/ioctl.h"
-#include <string.h>
+
+#include <climits>
+#include <cstdlib>
+#include <cstring>
 
 
 using namespace remote_wiring::transport;
 using namespace std;
 
-UartSerial::UartSerial(const char *device) : _fd(-1), _bytes_available_callback(nullptr), _callbackContext(nullptr), _polling(true)
+UartSerial::UartSerial (
+    const char * device_
+) :
+    _bytesAvailableCallback(nullptr),
+    _bytes_available_context(nullptr),
+    _poll_thread(),
+    _polling(false),
+    _polling_file_descriptor{0},
+    _serial_device_path(nullptr),
+    _serial_file_descriptor(-1),
+    _tio_config{0},
+    _tio_config_original{0}
 {
-  bzero(&_tio_config, sizeof(_tio_config));
-  strcpy(_device, device);
+  int len = ::strnlen(device_, PATH_MAX);
+
+  if ( 0 == len ) {
+    ::perror("UartSerial::UartSerial - Invalid file serial device path");
+  } else if ( NULL == (_serial_device_path = (char *)::malloc(len + 1))) {
+    ::perror("UartSerial::UartSerial - Unable to allocate memory to store serial device path");
+  } else {
+    ::strncpy(_serial_device_path, device_, len);
+    _serial_device_path[len] = '\0';
+  }
 }
 
-UartSerial::~UartSerial()
-{
-  end();
+UartSerial::~UartSerial (
+    void
+) {
+  //TODO: Allow `end()` to be called more than once.
+  ::free(_serial_device_path);
 }
 
-size_t UartSerial::available()
-{
-  if (_fd == -1) return 0;
+size_t
+UartSerial::available (
+    void
+) {
+  size_t num_bytes_available = 0;
 
-  int numBytesAvailable;
-  ioctl(_fd, FIONREAD, &numBytesAvailable);
-  return numBytesAvailable;
-}
-
-void UartSerial::begin(uint32_t speed_, size_t config_)
-{
-  _fd = open(_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
-  
-  // Unable to open the device
-  if(_fd < 0) {perror(_device); exit(-1);}
-
-  // File descriptor is not a TTY device
-  if(!isatty(_fd)) {perror("UartSerial::begin - file descriptor is not a TTY device"); exit(-1);}
-
-  // save current device settings
-  if (tcgetattr(_fd, &_tio_original_config) < 0)
-  {
-    perror("UartSerial::begin - Unable to save current term attributes");
-    exit(-1);
+  if ( -1 == _serial_file_descriptor ) {
+    ::perror("UartSerial::available - Invalid file descriptor");
+  } else if ( -1 == ::ioctl(_serial_file_descriptor, FIONREAD, &num_bytes_available) ) {
+    ::perror("UartSerial::available - `ioctl()` request failed");
+    num_bytes_available = 0;
   }
 
-  speed_t baud_rate = speed_;
+  return num_bytes_available;
+}
 
-  // Handle common baud rates
-  switch(speed_)
-  {
+void
+UartSerial::begin (
+    const uint32_t speed_,
+    const size_t config_
+) {
+  // Scrubbed parameters
+  speed_t baud_rate = B0;
+  size_t c_cflags = (size_t)-1;
+
+  // Interpret common baud rates
+  switch (speed_) {
+    case 300: baud_rate = B300; break;
+    case 600: baud_rate = B600; break;
+    case 1200: baud_rate = B1200; break;
     case 2400: baud_rate = B2400; break;
     case 4800: baud_rate = B4800; break;
     case 9600: baud_rate = B9600; break;
+    case 14400: break;
     case 19200: baud_rate = B19200; break;
+    case 28800: break;
     case 38400: baud_rate = B38400; break;
     case 57600: baud_rate = B57600; break;
     case 115200: baud_rate = B115200; break;
-    case 230400: baud_rate = B230400; break;
+    default: break;
   }
 
-  cfsetispeed(&_tio_config, baud_rate);
-  cfsetospeed(&_tio_config, baud_rate);
+  switch (config_) {
+    case SERIAL_5E1:
+    case SERIAL_5E2:
+    case SERIAL_5N1:
+    case SERIAL_5N2:
+    case SERIAL_5O1:
+    case SERIAL_5O2:
+    case SERIAL_6E1:
+    case SERIAL_6E2:
+    case SERIAL_6N1:
+    case SERIAL_6N2:
+    case SERIAL_6O1:
+    case SERIAL_6O2:
+    case SERIAL_7E1:
+    case SERIAL_7E2:
+    case SERIAL_7N1:
+    case SERIAL_7N2:
+    case SERIAL_7O1:
+    case SERIAL_7O2:
+    case SERIAL_8E1:
+    case SERIAL_8E2:
+    case SERIAL_8N1:
+    case SERIAL_8N2:
+    case SERIAL_8O1:
+    case SERIAL_8O2:
+      c_cflags = config_;
+    default: break;
+  }
 
-  // Configure the termios structure. See termios man page for further info
-  // http://man7.org/linux/man-pages/man3/termios.3.html
-
-  // c_iflag - input modes
-  // Leave all input flags unset
-
-  // c_oflag - output modes
-  // Leave all output flags unset
-
-  // c_cflag - control modes
-  _tio_config.c_cflag |= CS8;   // 8 bit characters
-  _tio_config.c_cflag |= CREAD; // Enable receiver
-  _tio_config.c_cflag |= CLOCAL;// Ignore modem control lines
-
-  // c_lflag - local modes
-  // Leave all local mode flags unset. This enables noncanonical mode input.
-
-  // c_cc - special characters
-  // The following combination of VTIME and VMIN will result in a polling
-  // read. If data is available a call to read() returns immediately. If
-  // no data is available a call to read() returns 0. 
-  _tio_config.c_cc[VTIME]    = 0;
-  _tio_config.c_cc[VMIN]     = 0;
-  
+  // Validate baud rate
+  if ( B0 == baud_rate ) {
+    ::perror("UartSerial::begin - Unsupported baud rate");
+  // Validate configuration flags
+  } else if ( (size_t)-1 == c_cflags ) {
+    ::perror("UartSerial::begin - Unsupported configuration");
+  // Attempt to open the device
+  } else if ( 0 > (_serial_file_descriptor = ::open(_serial_device_path, (O_RDWR | O_NOCTTY | O_NONBLOCK))) ) {
+    ::perror(_serial_device_path);
+  // Confirm file descriptor is a TTY device
+  } else if ( 0 == ::isatty(_serial_file_descriptor) ) {
+    ::perror("UartSerial::begin - File descriptor is not a TTY device");
+    if ( 0 != cleanupSerialFileDescriptor() ) {
+      ::perror("UartSerial::begin - Unable to close serial file descriptor");
+    }
+  // Save current device settings
+  } else if ( 0 != ::tcgetattr(_serial_file_descriptor, &_tio_config_original) ) {
+    ::perror("UartSerial::begin - Unable to save current term attributes");
+    if ( 0 != cleanupSerialFileDescriptor() ) {
+      ::perror("UartSerial::begin - Unable to close serial file descriptor");
+    }
   // Flush all current i/o data before enabling the new configuration
-  tcflush(_fd, TCIOFLUSH);
+  } else if ( 0 != ::tcflush(_serial_file_descriptor, TCIOFLUSH) ) {
+    ::perror("UartSerial::begin - Unable to save current term attributes");
+    if ( 0 != cleanupSerialFileDescriptor() ) {
+      ::perror("UartSerial::begin - Unable to close serial file descriptor");
+    }
+  // Update configuration
+  } else if ( 0 != ::cfsetspeed(&_tio_config, baud_rate) ) {
+    ::perror("UartSerial::begin - Unable to set baud rate");
+    if ( 0 != cleanupSerialFileDescriptor() ) {
+      ::perror("UartSerial::begin - Unable to close serial file descriptor");
+    }
+  } else {
+    // Configure the termios structure. See termios man page for further info
+    // http://man7.org/linux/man-pages/man3/termios.3.html
 
-  // Enable new term configuration
-  if(tcsetattr(_fd, TCSANOW, &_tio_config) < 0)
-  {
-    perror("UartSerial::begin - Unable to set term attributes");
-    exit(-1);
+    // c_iflag - input modes
+    // Leave all input flags unset
+
+    // c_oflag - output modes
+    // Leave all output flags unset
+
+    // c_cflag - control modes
+    _tio_config.c_cflag |= CS8;  //TODO: Configuration passed by caller
+    _tio_config.c_cflag |= CREAD;   // Enable receiver
+    _tio_config.c_cflag |= CLOCAL;  // Ignore modem control lines
+
+    // c_lflag - local modes
+    // Leave all local mode flags unset. This enables noncanonical mode input.
+
+    // c_cc - special characters
+    // The following combination of VTIME and VMIN will result in a polling
+    // read. If data is available a call to read() returns immediately. If
+    // no data is available a call to read() returns 0.
+    _tio_config.c_cc[VTIME] = 0;
+    _tio_config.c_cc[VMIN] = 0;
+
+    // Enable new term configuration
+    if ( 0 != ::tcsetattr(_serial_file_descriptor, TCSANOW, &_tio_config) ) {
+      ::perror("UartSerial::begin - Unable to set term attributes");
+      if ( 0 != cleanupSerialFileDescriptor() ) {
+        ::perror("UartSerial::begin - Unable to close serial file descriptor");
+      }
+    }
   }
 }
 
-void UartSerial::end()
-{
-  if(_fd == -1) return;
-  
-  flush();
+int
+UartSerial::cleanupSerialFileDescriptor (
+    void
+) {
+  int error;
 
-  // Shut down the poll() thread
-  _polling = false;
-  _pollThread.join();
+  if ( 0 != ::close(_serial_file_descriptor) ) {
+    error = 0x1;
+  } else {
+    _serial_file_descriptor = -1;
+    error = 0x0;
+  }
 
-  // Restore the original settings
-  tcsetattr(_fd, TCSANOW, &_tio_original_config);
-  close(_fd);
-  _fd = -1;
+  return error;
 }
 
-void UartSerial::flush()
-{
-  if(_fd != -1)
-    tcdrain(_fd);
+void
+UartSerial::end (
+    void
+) {
+  if ( -1 == _serial_file_descriptor ) {
+    // `end()` has already been called, no action required
+  } else {
+    flush();
+
+    // Shut down the poll() thread
+    _polling = false;
+    _poll_thread.join();
+
+    // Restore the original settings and close the descriptor
+    if ( 0 != ::tcsetattr(_serial_file_descriptor, TCSANOW, &_tio_config_original) ) {
+      ::perror("UartSerial::end - Unable to restore term attributes");
+      if ( 0 != cleanupSerialFileDescriptor() ) {
+        ::perror("UartSerial::end - Unable to close serial file descriptor");
+      }
+    }
+  }
 }
 
-int UartSerial::read()
-{
-  if(_fd == -1) return -1;
-
-  int buffer[1];
-  int res = ::read(_fd, buffer, 1);
-  if (res == 0) 
-    return -1;
-  else
-    return buffer[0];
+void
+UartSerial::flush (
+    void
+) {
+  if ( -1 == _serial_file_descriptor ) {
+    ::perror("UartSerial::flush - Invalid file descriptor");
+  } else if ( 0 != ::tcdrain(_serial_file_descriptor) ) {
+    ::perror("UartSerial::flush - Unable to flush the serial buffer");
+  }
 }
 
-void UartSerial::write(uint8_t byte_)
-{
-  if(_fd != -1)
-    ::write(_fd, &byte_, 1);
+void
+UartSerial::pollForSerialData (
+    void
+) {
+  const int timeout_ms = 0;
+
+  while ( _polling ) {
+    switch ( ::poll(&_polling_file_descriptor, 1, timeout_ms) ) {
+      case -1:  // error
+        ::perror("UartSerial::pollForSerialData - Polling error occurred");
+        break;
+      case 0:  // timeout
+        // Release control back to the CPU
+        this_thread::sleep_for(std::chrono::seconds(0));
+        break;
+      default:
+        if ( _polling_file_descriptor.revents & POLLIN ) {
+          _bytesAvailableCallback(_bytes_available_context);
+        } else {
+          // Release control back to the CPU
+          this_thread::sleep_for(std::chrono::seconds(0));
+        }
+    }
+  }
 }
 
-void UartSerial::registerSerialEventCallback (serialEvent bytes_available_, void *context_)
-{
-  if(_fd == -1) return;
+int
+UartSerial::read (
+    void
+) {
+  int buffer;
 
-  // For now only allow a single callback to be assigned
-  if(_bytes_available_callback == nullptr)
-  {
-    _bytes_available_callback = bytes_available_;
-    _callbackContext = context_;
+  if ( -1 == _serial_file_descriptor ) {
+    ::perror("UartSerial::read - Invalid file descriptor");
+  } else if ( 0 == ::read(_serial_file_descriptor, &buffer, 1) ) {
+    buffer = -1;
+  } else {
+    buffer &= 0xFF;
+  }
+
+  return buffer;
+}
+
+void
+UartSerial::registerSerialEventCallback (
+    serialEvent bytes_available_,
+    void * context_
+) {
+  if ( bytes_available_ == nullptr ) {
+    ::perror("UartSerial::registerSerialEventCallback - Invalid function pointer");
+  } else if ( -1 == _serial_file_descriptor ) {
+    ::perror("UartSerial::registerSerialEventCallback - Invalid file descriptor");
+  } else if ( nullptr != _bytesAvailableCallback ) {
+    ::perror("UartSerial::registerSerialEventCallback - A callback has already been registered");
+  } else {
+    _bytesAvailableCallback = bytes_available_;
+    _bytes_available_context = context_;
 
     // Setup poll struct
-    _fds[0].fd = _fd;
-    _fds[0].events = POLLIN;
+    _polling_file_descriptor.fd = _serial_file_descriptor;
+    _polling_file_descriptor.events = POLLIN;
 
     _polling = true;
-    _pollThread = std::thread(&UartSerial::pollForSerialData, this);
+    _poll_thread = std::thread(&UartSerial::pollForSerialData, this);
   }
 }
 
-void UartSerial::pollForSerialData()
-{
-  int pollrc = 0;
-  while(_polling)
-  {
-    pollrc = poll(_fds, 1, 5); // timeout after 5ms
-    if (pollrc > 0 && (_fds[0].revents & POLLIN))
-    {
-      _bytes_available_callback(_callbackContext);
-    }
-    else
-    {
-      // Release control back to the CPU
-      this_thread::sleep_for(std::chrono::seconds(0));
-    }
+void
+UartSerial::write (
+    uint8_t byte_
+) {
+  if ( -1 == _serial_file_descriptor ) {
+    ::perror("UartSerial::write - Invalid file descriptor");
+  } else if ( 0 > ::write(_serial_file_descriptor, &byte_, 1) ) {
+    ::perror("UartSerial::write - Unable to write data");
   }
 }
+
+/* Created and copyrighted by Kevin D. Sidwar. Offered as open source under the MIT License (MIT). */

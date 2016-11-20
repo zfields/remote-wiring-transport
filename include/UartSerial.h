@@ -3,38 +3,40 @@
 #ifndef UartSerial_H
 #define UartSerial_H
 
-#include "Stream.h"
-#include <termios.h>
-#include <thread>
 #include <sys/poll.h>
+#include <termios.h>
+
 #include <atomic>
+#include <thread>
+
+#include "Stream.h"
 
 namespace remote_wiring {
 
-size_t const SERIAL_5E1 = 0x0800;
-size_t const SERIAL_5E2 = 0x0C00;
+size_t const SERIAL_5E1 = 0x1000;
+size_t const SERIAL_5E2 = 0x1400;
 size_t const SERIAL_5N1 = 0x0000;
 size_t const SERIAL_5N2 = 0x0400;
-size_t const SERIAL_5O1 = 0x1800;
-size_t const SERIAL_5O2 = 0x1C00;
-size_t const SERIAL_6E1 = 0x0900;
-size_t const SERIAL_6E2 = 0x0D00;
+size_t const SERIAL_5O1 = 0x3000;
+size_t const SERIAL_5O2 = 0x3400;
+size_t const SERIAL_6E1 = 0x1100;
+size_t const SERIAL_6E2 = 0x1500;
 size_t const SERIAL_6N1 = 0x0100;
 size_t const SERIAL_6N2 = 0x0500;
-size_t const SERIAL_6O1 = 0x1900;
-size_t const SERIAL_6O2 = 0x1D00;
-size_t const SERIAL_7E1 = 0x0A00;
-size_t const SERIAL_7E2 = 0x0E00;
+size_t const SERIAL_6O1 = 0x3100;
+size_t const SERIAL_6O2 = 0x3500;
+size_t const SERIAL_7E1 = 0x1200;
+size_t const SERIAL_7E2 = 0x1600;
 size_t const SERIAL_7N1 = 0x0200;
 size_t const SERIAL_7N2 = 0x0600;
-size_t const SERIAL_7O1 = 0x1A00;
-size_t const SERIAL_7O2 = 0x1E00;
-size_t const SERIAL_8E1 = 0x0B00;
-size_t const SERIAL_8E2 = 0x0F00;
+size_t const SERIAL_7O1 = 0x3200;
+size_t const SERIAL_7O2 = 0x3600;
+size_t const SERIAL_8E1 = 0x1300;
+size_t const SERIAL_8E2 = 0x1700;
 size_t const SERIAL_8N1 = 0x0300;
 size_t const SERIAL_8N2 = 0x0700;
-size_t const SERIAL_8O1 = 0x1B00;
-size_t const SERIAL_8O2 = 0x1F00;
+size_t const SERIAL_8O1 = 0x3300;
+size_t const SERIAL_8O2 = 0x3700;
 
 namespace transport {
 
@@ -50,12 +52,13 @@ namespace transport {
 * \sa <a href="https://github.com/torvalds/linux/blob/master/include/uapi/asm-generic/termbits.h">termbits.h (Linux)</a>
 */
 typedef struct SerialFlags {
-  uint16_t reserved_1:3;
-  uint16_t parity_odd:1;
-  uint16_t parity_enable:1;
-  uint16_t stop_bit_2:1;
+  uint16_t reserved_1:8;
   uint16_t char_count:2;
-  uint16_t reserved_2:8;
+  uint16_t stop_bit_2:1;
+  uint16_t reserved_2:1;
+  uint16_t parity_enable:1;
+  uint16_t parity_odd:1;
+  uint16_t reserved_3:2;
 } SerialFlags;
 
 /*!
@@ -74,16 +77,15 @@ union SerialOptions {
 
 class UartSerial : public Stream {
   private:
-    int _fd;
-    char _device[64];
-    struct termios _tio_original_config;
-    struct termios _tio_config;
-    serialEvent _bytes_available_callback;
-    void *_callbackContext;
-    
-    struct pollfd _fds[1];
-    std::thread _pollThread;
+    serialEvent _bytesAvailableCallback;
+    void * _bytes_available_context;
+    std::thread _poll_thread;
     std::atomic<bool> _polling;
+    struct pollfd _polling_file_descriptor;
+    char * _serial_device_path;
+    int _serial_file_descriptor;
+    struct termios _tio_config;
+    struct termios _tio_config_original;
 
   public:
     UartSerial(const char *device);
@@ -115,11 +117,12 @@ class UartSerial : public Stream {
     */
     void
     begin (
-      uint32_t speed_ = 57600,
-      size_t config_ = SERIAL_8N1
+      const uint32_t speed_ = 57600,
+      const size_t config_ = SERIAL_8N1
     );
 
   private:
+    int cleanupSerialFileDescriptor(void);
     void pollForSerialData(void);
 };
 
