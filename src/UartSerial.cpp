@@ -140,19 +140,14 @@ UartSerial::begin (
     }
   // Flush all current i/o data before enabling the new configuration
   } else if ( 0 != ::tcflush(_serial_file_descriptor, TCIOFLUSH) ) {
-    ::perror("UartSerial::begin - Unable to save current term attributes");
-    if ( 0 != cleanupSerialFileDescriptor() ) {
-      ::perror("UartSerial::begin - Unable to close serial file descriptor");
-    }
-  // Update configuration
-  } else if ( 0 != ::cfsetspeed(&_tio_config, baud_rate) ) {
-    ::perror("UartSerial::begin - Unable to set baud rate");
+    ::perror("UartSerial::begin - Unable to flush file descriptor");
     if ( 0 != cleanupSerialFileDescriptor() ) {
       ::perror("UartSerial::begin - Unable to close serial file descriptor");
     }
   } else {
     // Configure the termios structure. See termios man page for further info
     // http://man7.org/linux/man-pages/man3/termios.3.html
+    _tio_config = _tio_config_original;
 
     // c_iflag - input modes
     // Leave all input flags unset
@@ -164,6 +159,7 @@ UartSerial::begin (
     _tio_config.c_cflag |= CS8;  //TODO: Configuration passed by caller
     _tio_config.c_cflag |= CREAD;   // Enable receiver
     _tio_config.c_cflag |= CLOCAL;  // Ignore modem control lines
+    _tio_config.c_cflag |= HUPCL;  // Enable hang-up on close
 
     // c_lflag - local modes
     // Leave all local mode flags unset. This enables noncanonical mode input.
@@ -175,8 +171,14 @@ UartSerial::begin (
     _tio_config.c_cc[VTIME] = 0;
     _tio_config.c_cc[VMIN] = 0;
 
+    // Update configuration
+    if ( 0 != ::cfsetspeed(&_tio_config, baud_rate) ) {
+      ::perror("UartSerial::begin - Unable to set baud rate");
+      if ( 0 != cleanupSerialFileDescriptor() ) {
+        ::perror("UartSerial::begin - Unable to close serial file descriptor");
+      }
     // Enable new term configuration
-    if ( 0 != ::tcsetattr(_serial_file_descriptor, TCSANOW, &_tio_config) ) {
+    } else if ( 0 != ::tcsetattr(_serial_file_descriptor, TCSANOW, &_tio_config) ) {
       ::perror("UartSerial::begin - Unable to set term attributes");
       if ( 0 != cleanupSerialFileDescriptor() ) {
         ::perror("UartSerial::begin - Unable to close serial file descriptor");
@@ -269,6 +271,7 @@ UartSerial::read (
 
   if ( -1 == _serial_file_descriptor ) {
     ::perror("UartSerial::read - Invalid file descriptor");
+    buffer = -1;
   } else if ( 0 == ::read(_serial_file_descriptor, &buffer, 1) ) {
     buffer = -1;
   } else {
