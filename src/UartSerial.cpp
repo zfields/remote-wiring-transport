@@ -219,9 +219,10 @@ UartSerial::end (
     // Restore the original settings and close the descriptor
     if ( 0 != ::tcsetattr(_serial_file_descriptor, TCSANOW, &_tio_config_original) ) {
       ::perror("UartSerial::end - Unable to restore term attributes");
-      if ( 0 != cleanupSerialFileDescriptor() ) {
-        ::perror("UartSerial::end - Unable to close serial file descriptor");
-      }
+    }
+
+    if ( 0 != cleanupSerialFileDescriptor() ) {
+      ::perror("UartSerial::end - Unable to close serial file descriptor");
     }
   }
 }
