@@ -69,7 +69,7 @@ UartSerial::begin (
 ) {
   // Scrubbed parameters
   speed_t baud_rate = B0;
-  size_t c_cflags = (size_t)-1;
+  size_t c_cflags = 0;
 
   // Interpret common baud rates
   switch (speed_) {
@@ -88,40 +88,41 @@ UartSerial::begin (
     default: break;
   }
 
+  // Initialize the value for c_cflag with the options needed for the
+  // character size, parity and stop bits.
   switch (config_) {
-    case SERIAL_5E1:
-    case SERIAL_5E2:
-    case SERIAL_5N1:
-    case SERIAL_5N2:
-    case SERIAL_5O1:
-    case SERIAL_5O2:
-    case SERIAL_6E1:
-    case SERIAL_6E2:
-    case SERIAL_6N1:
-    case SERIAL_6N2:
-    case SERIAL_6O1:
-    case SERIAL_6O2:
-    case SERIAL_7E1:
-    case SERIAL_7E2:
-    case SERIAL_7N1:
-    case SERIAL_7N2:
-    case SERIAL_7O1:
-    case SERIAL_7O2:
-    case SERIAL_8E1:
-    case SERIAL_8E2:
-    case SERIAL_8N1:
-    case SERIAL_8N2:
-    case SERIAL_8O1:
-    case SERIAL_8O2:
-      c_cflags = config_;
-    default: break;
+    case SERIAL_5E1: c_cflags = CS5 | PARENB; break;
+    case SERIAL_5E2: c_cflags = CS5 | PARENB | CSTOPB; break;
+    case SERIAL_5N1: c_cflags = CS5; break;
+    case SERIAL_5N2: c_cflags = CS5 | CSTOPB; break;
+    case SERIAL_5O1: c_cflags = CS5 | PARENB | PARODD; break;
+    case SERIAL_5O2: c_cflags = CS5 | PARENB | PARODD | CSTOPB; break;
+    case SERIAL_6E1: c_cflags = CS6 | PARENB; break;
+    case SERIAL_6E2: c_cflags = CS6 | PARENB | CSTOPB; break;
+    case SERIAL_6N1: c_cflags = CS6; break;
+    case SERIAL_6N2: c_cflags = CS6 | CSTOPB; break;
+    case SERIAL_6O1: c_cflags = CS6 | PARENB | PARODD; break;
+    case SERIAL_6O2: c_cflags = CS6 | PARENB | PARODD | CSTOPB; break;
+    case SERIAL_7E1: c_cflags = CS7 | PARENB; break;
+    case SERIAL_7E2: c_cflags = CS7 | PARENB | CSTOPB; break;
+    case SERIAL_7N1: c_cflags = CS7; break;
+    case SERIAL_7N2: c_cflags = CS7 | CSTOPB; break;
+    case SERIAL_7O1: c_cflags = CS7 | PARENB | PARODD; break;
+    case SERIAL_7O2: c_cflags = CS7 | PARENB | PARODD | CSTOPB; break;
+    case SERIAL_8E1: c_cflags = CS8 | PARENB; break;
+    case SERIAL_8E2: c_cflags = CS8 | PARENB | CSTOPB; break;
+    case SERIAL_8N1: c_cflags = CS8; break;
+    case SERIAL_8N2: c_cflags = CS8 | CSTOPB; break;
+    case SERIAL_8O1: c_cflags = CS8 | PARENB | PARODD; break;
+    case SERIAL_8O2: c_cflags = CS8 | PARENB | PARODD | CSTOPB; break;
+    default: c_cflags = SERIAL_INVALID_CONFIG; break;
   }
 
   // Validate baud rate
   if ( B0 == baud_rate ) {
     ::perror("UartSerial::begin - Unsupported baud rate");
   // Validate configuration flags
-  } else if ( (size_t)-1 == c_cflags ) {
+  } else if ( SERIAL_INVALID_CONFIG == c_cflags ) {
     ::perror("UartSerial::begin - Unsupported configuration");
   // Attempt to open the device
   } else if ( 0 > (_serial_file_descriptor = ::open(_serial_device_path, (O_RDWR | O_NOCTTY | O_NONBLOCK))) ) {
@@ -147,7 +148,6 @@ UartSerial::begin (
   } else {
     // Configure the termios structure. See termios man page for further info
     // http://man7.org/linux/man-pages/man3/termios.3.html
-    _tio_config = _tio_config_original;
 
     // c_iflag - input modes
     // Leave all input flags unset
@@ -156,7 +156,7 @@ UartSerial::begin (
     // Leave all output flags unset
 
     // c_cflag - control modes
-    _tio_config.c_cflag |= CS8;  //TODO: Configuration passed by caller
+    _tio_config.c_cflag = c_cflags;
     _tio_config.c_cflag |= CREAD;   // Enable receiver
     _tio_config.c_cflag |= CLOCAL;  // Ignore modem control lines
     _tio_config.c_cflag |= HUPCL;  // Enable hang-up on close
