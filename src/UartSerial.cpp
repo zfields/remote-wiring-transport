@@ -6,13 +6,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <chrono>
 #include <climits>
 #include <cstdlib>
 #include <cstring>
 
+#define SERIAL_INVALID_CONFIG 0x0001
 
-using namespace remote_wiring::transport;
-using namespace std;
+using namespace remote_wiring;
 
 UartSerial::UartSerial (
     const char * device_
@@ -64,7 +65,7 @@ UartSerial::available (
 
 void
 UartSerial::begin (
-    const uint32_t speed_,
+    const size_t speed_,
     const size_t config_
 ) {
   // Scrubbed parameters
@@ -91,30 +92,30 @@ UartSerial::begin (
   // Initialize the value for c_cflag with the options needed for the
   // character size, parity and stop bits.
   switch (config_) {
-    case SERIAL_5E1: c_cflags = CS5 | PARENB; break;
-    case SERIAL_5E2: c_cflags = CS5 | PARENB | CSTOPB; break;
-    case SERIAL_5N1: c_cflags = CS5; break;
-    case SERIAL_5N2: c_cflags = CS5 | CSTOPB; break;
-    case SERIAL_5O1: c_cflags = CS5 | PARENB | PARODD; break;
-    case SERIAL_5O2: c_cflags = CS5 | PARENB | PARODD | CSTOPB; break;
-    case SERIAL_6E1: c_cflags = CS6 | PARENB; break;
-    case SERIAL_6E2: c_cflags = CS6 | PARENB | CSTOPB; break;
-    case SERIAL_6N1: c_cflags = CS6; break;
-    case SERIAL_6N2: c_cflags = CS6 | CSTOPB; break;
-    case SERIAL_6O1: c_cflags = CS6 | PARENB | PARODD; break;
-    case SERIAL_6O2: c_cflags = CS6 | PARENB | PARODD | CSTOPB; break;
-    case SERIAL_7E1: c_cflags = CS7 | PARENB; break;
-    case SERIAL_7E2: c_cflags = CS7 | PARENB | CSTOPB; break;
-    case SERIAL_7N1: c_cflags = CS7; break;
-    case SERIAL_7N2: c_cflags = CS7 | CSTOPB; break;
-    case SERIAL_7O1: c_cflags = CS7 | PARENB | PARODD; break;
-    case SERIAL_7O2: c_cflags = CS7 | PARENB | PARODD | CSTOPB; break;
-    case SERIAL_8E1: c_cflags = CS8 | PARENB; break;
-    case SERIAL_8E2: c_cflags = CS8 | PARENB | CSTOPB; break;
-    case SERIAL_8N1: c_cflags = CS8; break;
-    case SERIAL_8N2: c_cflags = CS8 | CSTOPB; break;
-    case SERIAL_8O1: c_cflags = CS8 | PARENB | PARODD; break;
-    case SERIAL_8O2: c_cflags = CS8 | PARENB | PARODD | CSTOPB; break;
+    case wiring::SERIAL_5E1: c_cflags = (CS5|PARENB); break;
+    case wiring::SERIAL_5E2: c_cflags = (CS5|PARENB|CSTOPB); break;
+    case wiring::SERIAL_5N1: c_cflags = CS5; break;
+    case wiring::SERIAL_5N2: c_cflags = (CS5|CSTOPB); break;
+    case wiring::SERIAL_5O1: c_cflags = (CS5|PARENB|PARODD); break;
+    case wiring::SERIAL_5O2: c_cflags = (CS5|PARENB|PARODD|CSTOPB); break;
+    case wiring::SERIAL_6E1: c_cflags = (CS6|PARENB); break;
+    case wiring::SERIAL_6E2: c_cflags = (CS6|PARENB|CSTOPB); break;
+    case wiring::SERIAL_6N1: c_cflags = CS6; break;
+    case wiring::SERIAL_6N2: c_cflags = (CS6|CSTOPB); break;
+    case wiring::SERIAL_6O1: c_cflags = (CS6|PARENB|PARODD); break;
+    case wiring::SERIAL_6O2: c_cflags = (CS6|PARENB|PARODD|CSTOPB); break;
+    case wiring::SERIAL_7E1: c_cflags = (CS7|PARENB); break;
+    case wiring::SERIAL_7E2: c_cflags = (CS7|PARENB|CSTOPB); break;
+    case wiring::SERIAL_7N1: c_cflags = CS7; break;
+    case wiring::SERIAL_7N2: c_cflags = (CS7|CSTOPB); break;
+    case wiring::SERIAL_7O1: c_cflags = (CS7|PARENB|PARODD); break;
+    case wiring::SERIAL_7O2: c_cflags = (CS7|PARENB|PARODD|CSTOPB); break;
+    case wiring::SERIAL_8E1: c_cflags = (CS8|PARENB); break;
+    case wiring::SERIAL_8E2: c_cflags = (CS8|PARENB|CSTOPB); break;
+    case wiring::SERIAL_8N1: c_cflags = CS8; break;
+    case wiring::SERIAL_8N2: c_cflags = (CS8|CSTOPB); break;
+    case wiring::SERIAL_8O1: c_cflags = (CS8|PARENB|PARODD); break;
+    case wiring::SERIAL_8O2: c_cflags = (CS8|PARENB|PARODD|CSTOPB); break;
     default: c_cflags = SERIAL_INVALID_CONFIG; break;
   }
 
@@ -244,6 +245,11 @@ UartSerial::pollForSerialData (
 ) {
   const int timeout_ms = 0;
 
+  // Setup poll struct
+  _polling_file_descriptor.fd = _serial_file_descriptor;
+  _polling_file_descriptor.events = POLLIN;
+  _polling = true;
+
   while ( _polling ) {
     switch ( ::poll(&_polling_file_descriptor, 1, timeout_ms) ) {
       case -1:  // error
@@ -251,14 +257,14 @@ UartSerial::pollForSerialData (
         break;
       case 0:  // timeout
         // Release control back to the CPU
-        this_thread::sleep_for(std::chrono::seconds(0));
+        std::this_thread::sleep_for(std::chrono::seconds(0));
         break;
       default:
         if ( _polling_file_descriptor.revents & POLLIN ) {
-          _bytesAvailableCallback(_bytes_available_context);
+          if ( _bytesAvailableCallback ) _bytesAvailableCallback(_bytes_available_context);
         } else {
           // Release control back to the CPU
-          this_thread::sleep_for(std::chrono::seconds(0));
+          std::this_thread::sleep_for(std::chrono::seconds(0));
         }
     }
   }
@@ -287,22 +293,15 @@ UartSerial::registerSerialEventCallback (
     serialEvent bytes_available_,
     void * context_
 ) {
-  if ( bytes_available_ == nullptr ) {
-    ::perror("UartSerial::registerSerialEventCallback - Invalid function pointer");
-  } else if ( -1 == _serial_file_descriptor ) {
+  if ( -1 == _serial_file_descriptor ) {
     ::perror("UartSerial::registerSerialEventCallback - Invalid file descriptor");
-  } else if ( nullptr != _bytesAvailableCallback ) {
-    ::perror("UartSerial::registerSerialEventCallback - A callback has already been registered");
   } else {
     _bytesAvailableCallback = bytes_available_;
     _bytes_available_context = context_;
 
-    // Setup poll struct
-    _polling_file_descriptor.fd = _serial_file_descriptor;
-    _polling_file_descriptor.events = POLLIN;
-
-    _polling = true;
-    _poll_thread = std::thread(&UartSerial::pollForSerialData, this);
+    if ( _bytesAvailableCallback && !_polling ) {
+      _poll_thread = std::thread(&UartSerial::pollForSerialData, this);
+    }
   }
 }
 

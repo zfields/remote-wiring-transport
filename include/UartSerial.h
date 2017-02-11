@@ -13,33 +13,34 @@
 
 namespace remote_wiring {
 
-size_t const SERIAL_5E1 = 0x1000;
-size_t const SERIAL_5E2 = 0x1400;
-size_t const SERIAL_5N1 = 0x0000;
-size_t const SERIAL_5N2 = 0x0400;
-size_t const SERIAL_5O1 = 0x3000;
-size_t const SERIAL_5O2 = 0x3400;
-size_t const SERIAL_6E1 = 0x1100;
-size_t const SERIAL_6E2 = 0x1500;
-size_t const SERIAL_6N1 = 0x0100;
-size_t const SERIAL_6N2 = 0x0500;
-size_t const SERIAL_6O1 = 0x3100;
-size_t const SERIAL_6O2 = 0x3500;
-size_t const SERIAL_7E1 = 0x1200;
-size_t const SERIAL_7E2 = 0x1600;
-size_t const SERIAL_7N1 = 0x0200;
-size_t const SERIAL_7N2 = 0x0600;
-size_t const SERIAL_7O1 = 0x3200;
-size_t const SERIAL_7O2 = 0x3600;
-size_t const SERIAL_8E1 = 0x1300;
-size_t const SERIAL_8E2 = 0x1700;
-size_t const SERIAL_8N1 = 0x0300;
-size_t const SERIAL_8N2 = 0x0700;
-size_t const SERIAL_8O1 = 0x3300;
-size_t const SERIAL_8O2 = 0x3700;
-size_t const SERIAL_INVALID_CONFIG = 0x0001;
+namespace wiring {
 
-namespace transport {
+static const size_t SERIAL_5E1 = 0x1000;
+static const size_t SERIAL_5E2 = 0x1400;
+static const size_t SERIAL_5N1 = 0x0000;
+static const size_t SERIAL_5N2 = 0x0400;
+static const size_t SERIAL_5O1 = 0x3000;
+static const size_t SERIAL_5O2 = 0x3400;
+static const size_t SERIAL_6E1 = 0x1100;
+static const size_t SERIAL_6E2 = 0x1500;
+static const size_t SERIAL_6N1 = 0x0100;
+static const size_t SERIAL_6N2 = 0x0500;
+static const size_t SERIAL_6O1 = 0x3100;
+static const size_t SERIAL_6O2 = 0x3500;
+static const size_t SERIAL_7E1 = 0x1200;
+static const size_t SERIAL_7E2 = 0x1600;
+static const size_t SERIAL_7N1 = 0x0200;
+static const size_t SERIAL_7N2 = 0x0600;
+static const size_t SERIAL_7O1 = 0x3200;
+static const size_t SERIAL_7O2 = 0x3600;
+static const size_t SERIAL_8E1 = 0x1300;
+static const size_t SERIAL_8E2 = 0x1700;
+static const size_t SERIAL_8N1 = 0x0300;
+static const size_t SERIAL_8N2 = 0x0700;
+static const size_t SERIAL_8O1 = 0x3300;
+static const size_t SERIAL_8O2 = 0x3700;
+
+}  // wiring
 
 /*!
 * \brief SerialFlags describes the flags specified by the serial configuration
@@ -92,7 +93,7 @@ class UartSerial : public Stream {
     UartSerial(const char *device);
     virtual ~UartSerial(void);
     size_t available (void);
-    inline void begin(void) { begin(57600, SERIAL_8N1); }
+    inline void begin(void) { begin(57600, wiring::SERIAL_8N1); }
     void end (void);
     void flush (void);
     int read (void);
@@ -118,8 +119,8 @@ class UartSerial : public Stream {
     */
     void
     begin (
-      const uint32_t speed_ = 57600,
-      const size_t config_ = SERIAL_8N1
+      const size_t speed_,
+      const size_t config_ = wiring::SERIAL_8N1
     );
 
   private:
@@ -127,7 +128,6 @@ class UartSerial : public Stream {
     void pollForSerialData(void);
 };
 
-} // namespace transport
 } // namespace remote_wiring
 
 #endif // UartSerial_H
