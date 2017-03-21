@@ -11,9 +11,21 @@ Technical documentation, requirements and diagrams will be stored in the `docs/`
 This project uses the ***MIT license***, please consult the license file for details.
 
 ## References:
-[Serial - Wiring.org.co](http://wiring.org.co/reference/Serial.html)
-[Serial - Arduino.cc](https://www.arduino.cc/en/Reference/Serial)
-[Serial - Particle.io](https://docs.particle.io/reference/firmware/photon/#serial)
+
+[Serial - Wiring.org.co](http://wiring.org.co/reference/Serial.html)  
+[Serial - Arduino.cc](https://www.arduino.cc/en/Reference/Serial)  
+[Serial - Particle.io](https://docs.particle.io/reference/firmware/photon/#serial)  
+
+## Install instructions:
+
+```
+git clone https://github.com/remote-wiring/serial-wiring.git
+cd serial-wiring
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## Example code:
 
