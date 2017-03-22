@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <chrono>
 #include <climits>
 #include <cstdlib>
 #include <cstring>
@@ -213,7 +212,7 @@ UartSerial::begin (
     } else if ( SERIAL_CONFIG_INVALID == c_cflags ) {
         ::perror("UartSerial::begin - Unsupported configuration");
     // Attempt to open the device
-    } else if ( 0 > (_serial_file_descriptor = ::open(_serial_device_path, (O_RDWR | O_NOCTTY | O_NONBLOCK))) ) {
+    } else if ( 0 > (_serial_file_descriptor = ::open(_serial_device_path, (O_RDWR|O_NOCTTY))) ) {
         ::perror(_serial_device_path);
     // Confirm file descriptor is a TTY device
     } else if ( 0 == ::isatty(_serial_file_descriptor) ) {
@@ -309,14 +308,14 @@ UartSerial::pollForSerialData (
             break;
           case 0:  // timeout
             // Release control back to the CPU
-            std::this_thread::sleep_for(std::chrono::seconds(0));
+                std::this_thread::yield();
             break;
           default:
             if ( (_polling_file_descriptor.revents & POLLIN) && _bytesAvailableCallback ) {
                 _bytesAvailableCallback(_bytes_available_context);
             } else {
                 // Release control back to the CPU
-                std::this_thread::sleep_for(std::chrono::seconds(0));
+                std::this_thread::yield();
             }
         }
     }
