@@ -101,7 +101,7 @@ class Stream {
      *
      * \sa <a href="https://www.arduino.cc/en/Reference/StreamRead">Stream::read (Arduino.cc)</a>
      */
-    virtual
+    inline
     int
     read (
         void
@@ -120,7 +120,7 @@ class Stream {
      * \param [in] context_ Optional context provided to upon_bytes_available_
      *                      via the `context_` parameter
      */
-    virtual
+    inline
     void
     registerSerialEventCallback (
         serialEvent upon_bytes_available_,
@@ -136,7 +136,7 @@ class Stream {
      *
      * \sa <a href="https://www.arduino.cc/en/Reference/Serial/Write">Serial::write (Arduino.cc)</a>
      */
-    virtual
+    inline
     void
     write (
         uint8_t byte_
