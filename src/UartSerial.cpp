@@ -21,11 +21,11 @@ UartSerial::UartSerial (
     _bytes_available_context(nullptr),
     _poll_thread(),
     _polling(false),
-    _polling_file_descriptor{0},
+    _polling_file_descriptor{0, 0, 0},
     _serial_device_path(nullptr),
     _serial_file_descriptor(-1),
-    _tio_config{0},
-    _tio_config_original{0}
+    _tio_config{0, 0, 0, 0, 0, {0}, 0, 0},
+    _tio_config_original{0, 0, 0, 0, 0, {0}, 0, 0}
 {
     int len = ::strnlen(device_, PATH_MAX);
 
