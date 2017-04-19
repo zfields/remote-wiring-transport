@@ -1,11 +1,43 @@
 cmake_minimum_required(VERSION 2.8.2)
-project(SERIAL_WIRING)
+cmake_policy(SET CMP0048 NEW)
+project(SERIAL_WIRING VERSION 0.1.2 LANGUAGES CXX)
 
-set(CMAKE_CXX_FLAGS "-std=c++0x -Wall -Wextra -Werror")
+# Compile settings
+option(LOG "Enable debug log" OFF)
+if (LOG)
+  message(STATUS "Debug logging enabled...")
+  add_definitions(-DLOG)
+endif()
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+# Prerequisites
+find_package(Git REQUIRED)
 
-add_subdirectory(src)
-add_subdirectory(include)
+# serial_wiring
+add_library(serial_wiring ${CMAKE_CURRENT_SOURCE_DIR}/src/UartSerial.cpp)
+
+target_include_directories(serial_wiring
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/serial-wiring>
+)
+
+set_target_properties(serial_wiring
+  PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY lib
+    LIBRARY_OUTPUT_DIRECTORY lib
+)
+
+# To view the list of supported compiler features, see
+# (https://cmake.org/cmake/help/latest/prop_gbl/CMAKE_CXX_KNOWN_FEATURES.html)
+target_compile_features(serial_wiring
+  PUBLIC
+    cxx_nullptr
+    cxx_override
+    cxx_generalized_initializers
+)
+
+target_compile_options(serial_wiring
+  PUBLIC -Wall -Wextra -Werror
+)
+
+# Build sample applications
 add_subdirectory(samples)

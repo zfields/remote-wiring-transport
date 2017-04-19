@@ -7,6 +7,9 @@
 #include <termios.h>
 
 #include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <thread>
 
 #include "Stream.h"
