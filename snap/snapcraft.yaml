@@ -1,0 +1,26 @@
+name: serial-wiring
+version: '0.1.2'
+summary: "A serial abstraction library defined by the Wiring API."
+description: |
+    The library provides the "stream" interface. The library also comes with a sample program, "serial-wiring.readme_example", which can be used to ensure proper installation.
+    * serial-wiring - display the README.md (a.k.a. Quick Start Guide).
+    * serial-wiring.test - echo program confirming communication with any supported Arduino clone (run without parameters for more details).
+
+grade: devel
+confinement: devmode
+
+apps:
+  serial-wiring:
+    command: /bin/less $SNAP_CONTENT/README.md
+  test:
+    command: UartEcho
+    plugs:
+      - serial-port
+
+parts:
+  serial-wiring-lib:
+    source: https://github.com/remote-wiring/serial-wiring.git
+    plugin: cmake
+    install: |
+      cp -r ../src/README.md $SNAPCRAFT_PART_INSTALL/$SNAP_CONTENT
+      cp -r samples/UartEcho $SNAPCRAFT_PART_INSTALL

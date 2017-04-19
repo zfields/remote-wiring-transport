@@ -3,5 +3,8 @@ build/
 html/
 latex/
 lib/
+parts/
+prime/
+stage/
 *.dSYM
-
+*.snap
