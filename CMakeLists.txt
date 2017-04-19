@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 2.8.2)
 project(SERIAL_WIRING)
 
+# Compile settings
+option(LOG "Enable debug log" OFF)
+if (LOG)
+  message(STATUS "Debug logging enabled...")
+  add_definitions(-DLOG)
+endif()
+
+# Prerequisites
+find_package(Git REQUIRED)
+
 set(CMAKE_CXX_FLAGS "-std=c++0x -Wall -Wextra -Werror")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
