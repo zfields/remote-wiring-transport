@@ -123,7 +123,7 @@ class UartSerial : public Stream {
     );
 
   private:
-    serialEvent _bytesAvailableCallback;
+    serial_event_t _bytesAvailableCallback;
     void * _bytes_available_context;
     std::thread _poll_thread;
     std::atomic_bool _polling;
@@ -163,7 +163,7 @@ class UartSerial : public Stream {
 
     void
     _registerSerialEventCallback (
-        serialEvent upon_bytes_available_,
+        serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) override;
 

@@ -123,13 +123,13 @@ UartSerial::_read (
 
 void
 UartSerial::_registerSerialEventCallback (
-    serialEvent upon_bytes_available_,
+    serial_event_t uponBytesAvailable_,
     void * context_
 ) {
     if ( -1 == _serial_file_descriptor ) {
         ::perror("UartSerial::registerSerialEventCallback - Invalid file descriptor");
     } else {
-        _bytesAvailableCallback = upon_bytes_available_;
+        _bytesAvailableCallback = uponBytesAvailable_;
         _bytes_available_context = context_;
 
         if ( _bytesAvailableCallback && !_polling ) {

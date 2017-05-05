@@ -18,7 +18,7 @@ namespace serial_wiring {
  *
  * <a href="https://www.arduino.cc/en/Reference/SerialEvent">serialEvent (Arduino.cc)</a>
  */
-typedef void(*serialEvent)(void * context_);
+typedef void(*serial_event_t)(void * context_);
 
 /*!
  * \brief Stream is the base class for character and binary based streams
@@ -123,10 +123,10 @@ class Stream {
     inline
     void
     registerSerialEventCallback (
-        serialEvent upon_bytes_available_,
+        serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) {
-        _registerSerialEventCallback(upon_bytes_available_, context_);
+        _registerSerialEventCallback(uponBytesAvailable_, context_);
     }
 
     /*!
@@ -180,7 +180,7 @@ class Stream {
     virtual
     void
     _registerSerialEventCallback (
-        serialEvent upon_bytes_available_,
+        serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) = 0;
 
@@ -205,4 +205,3 @@ typedef serial_wiring::Stream Stream;
 #endif // STREAM_H
 
 /* Created and copyrighted by Zachary J. Fields. Offered as open source under the MIT License (MIT). */
-

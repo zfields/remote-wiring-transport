@@ -4,13 +4,17 @@ Serial Wiring is designed to support the Remote Wiring library, and defines the 
 
 _\*Denotes serial channels not yet available._
 
-### Serial Wiring API \[v0.1.1\]
+### Serial Wiring API \[v0.2.0\]:
+
+###### Data types
+
+```cpp
+typedef void(*serial_event_t)(void * context_);
+```
 
 ###### Stream Interface
 
 ```cpp
-typedef void(*serialEvent)(void * context_);
-
 size_t Stream::available (void);
   void Stream::begin (void);
   void Stream::end (void);
