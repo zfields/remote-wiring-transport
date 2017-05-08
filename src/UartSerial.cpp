@@ -24,8 +24,13 @@ UartSerial::UartSerial (
     _polling_file_descriptor{0, 0, 0},
     _serial_device_path(nullptr),
     _serial_file_descriptor(-1),
+#if defined(__APPLE__)
+    _tio_config{0, 0, 0, 0, {0}, 0, 0},
+    _tio_config_original{0, 0, 0, 0, {0}, 0, 0}
+#else
     _tio_config{0, 0, 0, 0, 0, {0}, 0, 0},
     _tio_config_original{0, 0, 0, 0, 0, {0}, 0, 0}
+#endif
 {
     int len = ::strnlen(device_, PATH_MAX);
 

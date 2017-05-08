@@ -3,7 +3,7 @@
 #ifndef UART_SERIAL_H
 #define UART_SERIAL_H
 
-#include <sys/poll.h>
+#include <poll.h>
 #include <termios.h>
 
 #include <atomic>

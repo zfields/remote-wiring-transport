@@ -36,6 +36,7 @@ int main (int argc, char * argv[]) {
 
     // Prompt for user input
     ::printf("Type a message to send to the Arduino, then press <Enter>: ");
+    ::fflush(stdout);
 
     // Capture user input
     char * user_input_buffer = NULL;
