@@ -43,7 +43,7 @@ class Stream {
     size_t
     available (
         void
-    ) {
+    ) const {
         return _available();
     }
 
@@ -114,10 +114,10 @@ class Stream {
      *
      * This callback shall be invoked when serial data has become available
      *
-     * \param [in] upon_bytes_available_ Callback invoked when byte(s) are
-     *                                   available in the buffer
+     * \param [in] uponBytesAvailable_ Callback invoked when byte(s) are
+     *                                 available in the buffer
      *
-     * \param [in] context_ Optional context provided to upon_bytes_available_
+     * \param [in] context_ Optional context provided to uponBytesAvailable_
      *                      via the `context_` parameter
      */
     inline
@@ -151,7 +151,7 @@ class Stream {
     size_t
     _available (
         void
-    ) = 0;
+    ) const = 0;
 
     virtual
     void

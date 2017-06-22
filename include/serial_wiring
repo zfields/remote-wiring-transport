@@ -3,6 +3,8 @@
 #ifndef SERIAL_WIRING
 #define SERIAL_WIRING
 
+#include "ByteCache.h"
+#include "CacheSerial.h"
 #include "Stream.h"
 #include "UartSerial.h"
 
