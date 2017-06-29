@@ -3,6 +3,7 @@ build/
 html/
 latex/
 lib/
+.vscode/
 *.dSYM
 
 a.out

@@ -136,22 +136,23 @@ class UartSerial : public Stream {
     size_t
     _available (
         void
-    ) override;
+    ) const override;
 
     inline
-    void
+    int
     _begin (
         void
     ) override {
         begin();
+        return 0;
     }
 
-    void
+    int
     _end (
         void
     ) override;
 
-    void
+    int
     _flush (
         void
     ) override;
@@ -161,13 +162,13 @@ class UartSerial : public Stream {
         void
     ) override;
 
-    void
+    int
     _registerSerialEventCallback (
         serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) override;
 
-    void
+    int
     _write (
         uint8_t byte_
     ) override;

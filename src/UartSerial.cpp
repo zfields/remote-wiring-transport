@@ -54,7 +54,7 @@ UartSerial::~UartSerial (
 size_t
 UartSerial::_available (
     void
-) {
+) const {
     size_t num_bytes_available = 0;
 
     if ( -1 == _serial_file_descriptor ) {
@@ -67,7 +67,7 @@ UartSerial::_available (
     return num_bytes_available;
 }
 
-void
+int
 UartSerial::_end (
     void
 ) {
@@ -94,9 +94,10 @@ UartSerial::_end (
             ::perror("UartSerial::end - Unable to close serial file descriptor");
         }
     }
+    return 0;
 }
 
-void
+int
 UartSerial::_flush (
     void
 ) {
@@ -106,6 +107,7 @@ UartSerial::_flush (
         ::perror("UartSerial::flush - Unable to transmit data in the serial buffer");
     } else {
     }
+    return 0;
 }
 
 int
@@ -126,7 +128,7 @@ UartSerial::_read (
     return buffer;
 }
 
-void
+int
 UartSerial::_registerSerialEventCallback (
     serial_event_t uponBytesAvailable_,
     void * context_
@@ -141,9 +143,10 @@ UartSerial::_registerSerialEventCallback (
             _poll_thread = std::thread(&UartSerial::pollForSerialData, this);
         }
     }
+    return 0;
 }
 
-void
+int
 UartSerial::_write (
     uint8_t byte_
 ) {
@@ -152,6 +155,7 @@ UartSerial::_write (
     } else if ( 0 > ::write(_serial_file_descriptor, &byte_, 1) ) {
         ::perror("UartSerial::write - Unable to write data");
     }
+    return 0;
 }
 
 void

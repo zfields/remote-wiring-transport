@@ -3,6 +3,7 @@
 #ifndef BYTE_CACHE_H
 #define BYTE_CACHE_H
 
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 
@@ -25,7 +26,14 @@ class ByteCache {
     cacheByte (
         uint8_t byte_
     ) {
-        _cacheByte(byte_);
+        int error;
+
+        if ( 0 != (error = _cacheByte(byte_)) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: ByteCache::cacheByte - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
     /*!
@@ -42,7 +50,14 @@ class ByteCache {
     readCachedByte (
         void
     ) {
-        return _readCachedByte();
+        int result = _readCachedByte();
+
+        if ( result < -1 || result > 255 ) {
+            errno = ERANGE;
+            ::perror("ERROR: ByteCache::readCachedByte - Underlying implementation result out of range!");
+        }
+
+        return result;
     }
 
     /*!
@@ -63,7 +78,16 @@ class ByteCache {
         serial_event_t uponCachedBytes_,
         void * context_ = nullptr
     ) {
-        _registerCachedBytesCallback(uponCachedBytes_, context_);
+        int error;
+
+        if ( !uponCachedBytes_ ) { context_ = nullptr; }
+
+        if ( 0 != (error = _registerCachedBytesCallback(uponCachedBytes_, context_)) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: ByteCache::registerCachedBytesCallback - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
     /*!
@@ -83,7 +107,7 @@ class ByteCache {
     ~ByteCache (void) {}
 
     virtual
-    void
+    int
     _cacheByte (
         uint8_t byte_
     ) = 0;
@@ -95,7 +119,7 @@ class ByteCache {
     ) = 0;
 
     virtual
-    void
+    int
     _registerCachedBytesCallback (
         serial_event_t uponCachedBytes_,
         void * context_ = nullptr
