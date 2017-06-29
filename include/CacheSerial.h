@@ -47,25 +47,27 @@ class CacheSerial : public ByteCache, public Stream {
     }
 
     inline
-    void
+    int
     _begin (
         void
     ) override {
         _rx.clear();
         _tx.clear();
+        return 0;
     }
 
     inline
-    void
+    int
     _cacheByte (
         uint8_t byte_
     ) override {
         _rx.push_back(byte_);
         if ( _uponBytesAvailable ) { std::thread(_uponBytesAvailable, _uponBytesAvailable_context).detach(); }
+        return 0;
     }
 
     inline
-    void
+    int
     _end (
         void
     ) override {
@@ -78,16 +80,18 @@ class CacheSerial : public ByteCache, public Stream {
         _uponBytesAvailable_context = nullptr;
         _uponCachedBytes = nullptr;
         _uponCachedBytes_context = nullptr;
+        return 0;
     }
 
     inline
-    void
+    int
     _flush (
         void
     ) override {
         // Manually call callback on ByteCache interface
         if ( !_tx.empty() ) { _uponCachedBytes(_uponCachedBytes_context); }
         _tx.clear();
+        return 0;
     }
 
     inline
@@ -121,23 +125,25 @@ class CacheSerial : public ByteCache, public Stream {
     }
 
     inline
-    void
+    int
     _registerCachedBytesCallback (
         serial_event_t uponCachedBytes_,
         void * context_ = nullptr
     ) override {
         _uponCachedBytes = uponCachedBytes_;
         _uponCachedBytes_context = context_;
+        return 0;
     }
 
     inline
-    void
+    int
     _registerSerialEventCallback (
         serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) override {
         _uponBytesAvailable = uponBytesAvailable_;
         _uponBytesAvailable_context = context_;
+        return 0;
     }
 
     inline
@@ -149,12 +155,13 @@ class CacheSerial : public ByteCache, public Stream {
     }
 
     inline
-    void
+    int
     _write (
         uint8_t byte_
     ) override {
         _tx.push_back(byte_);
         if ( _uponCachedBytes ) { std::thread(_uponCachedBytes, _uponCachedBytes_context).detach(); }
+        return 0;
     }
 
   private:

@@ -3,6 +3,7 @@
 #ifndef STREAM_H
 #define STREAM_H
 
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 
@@ -55,7 +56,14 @@ class Stream {
     begin (
         void
     ) {
-        _begin();
+        int error;
+
+        if ( 0 != (error = _begin()) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: Stream::begin - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
     /*!
@@ -68,7 +76,14 @@ class Stream {
     end (
         void
     ) {
-        _end();
+        int error;
+
+        if ( 0 != (error = _end()) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: Stream::end - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
     /*!
@@ -87,7 +102,14 @@ class Stream {
     flush (
         void
     ) {
-        _flush();
+        int error;
+
+        if ( 0 != (error = _flush()) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: Stream::flush - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
     /*!
@@ -106,7 +128,14 @@ class Stream {
     read (
         void
     ) {
-        return _read();
+        int result = _read();
+
+        if ( result < -1 || result > 255 ) {
+            errno = ERANGE;
+            ::perror("ERROR: Stream::read - Underlying implementation result out of range!");
+        }
+
+        return result;
     }
 
     /*!
@@ -126,7 +155,16 @@ class Stream {
         serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) {
-        _registerSerialEventCallback(uponBytesAvailable_, context_);
+        int error;
+
+        if ( !uponBytesAvailable_ ) { context_ = nullptr; }
+
+        if ( 0 != (error = _registerSerialEventCallback(uponBytesAvailable_, context_)) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: Stream::registerSerialEventCallback - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
     /*!
@@ -141,7 +179,14 @@ class Stream {
     write (
         uint8_t byte_
     ) {
-        _write(byte_);
+        int error;
+
+        if ( 0 != (error = _write(byte_)) ) {
+            errno = error;
+    #ifdef LOG_ERRORS
+            ::perror("ERROR: Stream::write - Underlying implementation encountered error!");
+    #endif
+        }
     }
 
   protected:
@@ -154,19 +199,19 @@ class Stream {
     ) const = 0;
 
     virtual
-    void
+    int
     _begin (
         void
     ) = 0;
 
     virtual
-    void
+    int
     _end (
         void
     ) = 0;
 
     virtual
-    void
+    int
     _flush (
         void
     ) = 0;
@@ -178,14 +223,14 @@ class Stream {
     ) = 0;
 
     virtual
-    void
+    int
     _registerSerialEventCallback (
         serial_event_t uponBytesAvailable_,
         void * context_ = nullptr
     ) = 0;
 
     virtual
-    void
+    int
     _write (
         uint8_t byte_
     ) = 0;
