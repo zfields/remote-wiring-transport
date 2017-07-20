@@ -99,7 +99,7 @@ TEST_CASE("ByteCache::cacheByte - Invokes the underlying implementation", "[Byte
 
 TEST_CASE("ByteCache::cacheByte - Supplies `byte` argument to the underlying implementation", "[ByteCache::cacheByte]") {
     ConcreteByteCache ByteCache;
-    uint8_t expected_result = 0x79;
+    const uint8_t expected_result = 0x79;
     ByteCache.cacheByte(expected_result);
     REQUIRE( expected_result == ByteCache.cacheByte_byte_arg );
 }
@@ -161,14 +161,14 @@ TEST_CASE("ByteCache::registerCachedBytesCallback - A pointer adhering to the `s
     //TODO: Create a test similar to the code below to lock the method signature, and break if the method signature changes
     /*
      * ConcreteByteCache ByteCache;
-     * typedef void(ByteCache::*registerCachedBytesCallback_func_t)(uint8_t);
+     * typedef void(ByteCache::*registerCachedBytesCallback_func_t)(serial_event_t, void *);
      * registerCachedBytesCallback_func_t registerCachedBytesCallback_func = &ByteCache.registerCachedBytesCallback;
      */
 }
 
 TEST_CASE("ByteCache::registerCachedBytesCallback - Supplies `uponBytesAvailable` argument to the underlying implementation", "[ByteCache::registerCachedBytesCallback]") {
     ConcreteByteCache ByteCache;
-    serial_event_t expected_result = callback;
+    const serial_event_t expected_result = callback;
     ByteCache.registerCachedBytesCallback(expected_result);
     REQUIRE( expected_result == ByteCache.registerCachedBytesCallback_uponCachedBytes_arg );
 }

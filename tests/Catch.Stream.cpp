@@ -238,14 +238,14 @@ TEST_CASE("Stream::registerSerialEventCallback - A pointer adhering to the `seri
     //TODO: Create a test similar to the code below to lock the method signature, and break if the method signature changes
     /*
      * ConcreteStream stream;
-     * typedef void(Stream::*write_func_t)(uint8_t);
-     * write_func_t write_func = &stream.write;
+     * typedef void(Stream::*registerSerialEventCallback_func_t)(serial_event_t, void *);
+     * registerSerialEventCallback_func_t registerSerialEventCallback_func = &stream.registerSerialEventCallback;
      */
 }
 
 TEST_CASE("Stream::registerSerialEventCallback - Supplies `uponBytesAvailable` argument to the underlying implementation", "[Stream::registerSerialEventCallback]") {
     ConcreteStream stream;
-    serial_event_t expected_result = callback;
+    const serial_event_t expected_result = callback;
     stream.registerSerialEventCallback(expected_result);
     REQUIRE( expected_result == stream.registerSerialEventCallback_uponBytesAvailable_arg );
 }
@@ -293,7 +293,7 @@ TEST_CASE("Stream::write - Invokes the underlying implementation", "[Stream::wri
 
 TEST_CASE("Stream::write - Supplies `byte` argument to the underlying implementation", "[Stream::write]") {
     ConcreteStream stream;
-    uint8_t expected_result = 0x79;
+    const uint8_t expected_result = 0x79;
     stream.write(expected_result);
     REQUIRE( expected_result == stream.write_byte_arg );
 }

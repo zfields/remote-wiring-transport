@@ -30,9 +30,9 @@ class ByteCache {
 
         if ( 0 != (error = _cacheByte(byte_)) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: ByteCache::cacheByte - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 
@@ -54,7 +54,9 @@ class ByteCache {
 
         if ( result < -1 || result > 255 ) {
             errno = ERANGE;
+#ifdef LOG_ERRORS
             ::perror("ERROR: ByteCache::readCachedByte - Underlying implementation result out of range!");
+#endif
         }
 
         return result;
@@ -84,9 +86,9 @@ class ByteCache {
 
         if ( 0 != (error = _registerCachedBytesCallback(uponCachedBytes_, context_)) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: ByteCache::registerCachedBytesCallback - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 

@@ -61,9 +61,9 @@ class Stream {
 
         if ( 0 != (error = _begin()) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: Stream::begin - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 
@@ -81,9 +81,9 @@ class Stream {
 
         if ( 0 != (error = _end()) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: Stream::end - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 
@@ -107,9 +107,9 @@ class Stream {
 
         if ( 0 != (error = _flush()) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: Stream::flush - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 
@@ -122,6 +122,7 @@ class Stream {
      *       be avoided by first checking `available()` to see if
      *       data is available.
      *
+     * \sa Stream::available
      * \sa <a href="https://www.arduino.cc/en/Reference/StreamRead">Stream::read (Arduino.cc)</a>
      */
     inline
@@ -133,7 +134,9 @@ class Stream {
 
         if ( result < -1 || result > 255 ) {
             errno = ERANGE;
+#ifdef LOG_ERRORS
             ::perror("ERROR: Stream::read - Underlying implementation result out of range!");
+#endif
         }
 
         return result;
@@ -147,7 +150,7 @@ class Stream {
      * \param [in] uponBytesAvailable_ Callback invoked when byte(s) are
      *                                 available in the buffer
      *
-     * \param [in] context_ Optional context provided to uponBytesAvailable_
+     * \param [in] context_ Optional context provided to `uponBytesAvailable_`
      *                      via the `context_` parameter
      */
     inline
@@ -162,9 +165,9 @@ class Stream {
 
         if ( 0 != (error = _registerSerialEventCallback(uponBytesAvailable_, context_)) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: Stream::registerSerialEventCallback - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 
@@ -184,9 +187,9 @@ class Stream {
 
         if ( 0 != (error = _write(byte_)) ) {
             errno = error;
-    #ifdef LOG_ERRORS
+#ifdef LOG_ERRORS
             ::perror("ERROR: Stream::write - Underlying implementation encountered error!");
-    #endif
+#endif
         }
     }
 
@@ -227,7 +230,7 @@ class Stream {
     int
     _registerSerialEventCallback (
         serial_event_t uponBytesAvailable_,
-        void * context_ = nullptr
+        void * context_
     ) = 0;
 
     virtual
