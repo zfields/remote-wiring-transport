@@ -83,7 +83,7 @@ class ConcreteByteCache : public ByteCache {
     size_t
     _size (
         void
-    ) const override {
+    ) override {
         size_invoked = true;
         return size_result;
     }

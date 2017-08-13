@@ -101,13 +101,14 @@ class ByteCache {
     size_t
     size (
         void
-    ) const {
+    ) {
         return _size();
     }
 
   protected:
     ~ByteCache (void) {}
 
+  private:
     virtual
     int
     _cacheByte (
@@ -131,7 +132,7 @@ class ByteCache {
     size_t
     _size (
         void
-    ) const = 0;
+    ) = 0;
 };
 
 }  // namespace serial_wiring

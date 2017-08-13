@@ -7,7 +7,6 @@
 #include <cstdint>
 
 #include <deque>
-#include <thread>
 
 #include "ByteCache.h"
 #include "Stream.h"
@@ -37,12 +36,17 @@ class CacheSerial : public ByteCache, public Stream {
         _uponCachedBytes_context(nullptr)
     {}
     
+    virtual
+    ~CacheSerial (
+        void
+    ) {}
+
   protected:
     inline
     size_t
     _available (
         void
-    ) const override {
+    ) override {
         return _rx.size();
     }
 
@@ -62,7 +66,7 @@ class CacheSerial : public ByteCache, public Stream {
         uint8_t byte_
     ) override {
         _rx.push_back(byte_);
-        if ( _uponBytesAvailable ) { std::thread(_uponBytesAvailable, _uponBytesAvailable_context).detach(); }
+        if ( _uponBytesAvailable ) { _uponBytesAvailable(_uponBytesAvailable_context); }
         return 0;
     }
 
@@ -99,7 +103,7 @@ class CacheSerial : public ByteCache, public Stream {
     _read (
         void
     ) override {
-        int result = 0;
+        int result = -1;
 
         if ( !_rx.empty() ) {
             result = _rx.front();
@@ -114,7 +118,7 @@ class CacheSerial : public ByteCache, public Stream {
     _readCachedByte (
         void
     ) override {
-        int result = 0;
+        int result = -1;
 
         if ( !_tx.empty() ) {
             result = _tx.front();
@@ -150,7 +154,7 @@ class CacheSerial : public ByteCache, public Stream {
     size_t
     _size (
         void
-    ) const override {
+    ) override {
         return _tx.size();
     }
 
@@ -160,7 +164,7 @@ class CacheSerial : public ByteCache, public Stream {
         uint8_t byte_
     ) override {
         _tx.push_back(byte_);
-        if ( _uponCachedBytes ) { std::thread(_uponCachedBytes, _uponCachedBytes_context).detach(); }
+        if ( _uponCachedBytes ) { _uponCachedBytes(_uponCachedBytes_context); }
         return 0;
     }
 

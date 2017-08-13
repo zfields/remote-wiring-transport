@@ -95,7 +95,8 @@ class UartSerial : public Stream {
         const char * device_path_
     );
 
-    ~UartSerial(
+    virtual
+    ~UartSerial (
         void
     );
 
@@ -136,7 +137,7 @@ class UartSerial : public Stream {
     size_t
     _available (
         void
-    ) const override;
+    ) override;
 
     inline
     int

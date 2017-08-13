@@ -45,7 +45,7 @@ class Stream {
     size_t
     available (
         void
-    ) const {
+    ) {
         return _available();
     }
 
@@ -196,11 +196,12 @@ class Stream {
   protected:
     ~Stream (void) {}
 
+  private:
     virtual
     size_t
     _available (
         void
-    ) const = 0;
+    ) = 0;
 
     virtual
     int

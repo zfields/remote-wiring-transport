@@ -54,7 +54,7 @@ UartSerial::~UartSerial (
 size_t
 UartSerial::_available (
     void
-) const {
+) {
     size_t num_bytes_available = 0;
 
     if ( -1 == _serial_file_descriptor ) {
